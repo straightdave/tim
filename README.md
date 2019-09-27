@@ -7,6 +7,7 @@ Tim the enchanter (from Monty Python and the Holy Grail):<br>
 
 ## Version 1 - Hello World!
 > Done on 2019-09-26.
+
 Version 1 is an experiment. The `tim` would inject a `fmt.Println("hello world")` into `main` function in any source file.
 
 The strategy of locating the inject point:
@@ -26,4 +27,32 @@ Also it would ensure the package `fmt` is imported if not. Then the tool print o
 2. Execute:
 ```
 go tool tim your_go_file.go
+```
+
+### Example
+Before:
+```golang
+package main
+
+func Happy() string {
+	return "Hello World"
+}
+
+func main() {
+}
+```
+
+After:
+```golang
+package main
+
+import "fmt"
+
+func Happy() string {
+	return "Hello World"
+}
+
+func main() {
+	fmt.Println("hello world")
+}
 ```

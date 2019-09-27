@@ -36,6 +36,7 @@ func main() {
 		content: content,
 		fset:    fset,
 		buf:     NewBuffer(content),
+		pf:      parsedFile,
 	}
 
 BigLoop:
@@ -50,19 +51,7 @@ BigLoop:
 		}
 	}
 
-	// ensure package fmt
-	hasFMT := false
-	for _, pkg := range parsedFile.Imports {
-		if strings.HasPrefix(pkg.Path.Value, "\"fmt") {
-			hasFMT = true
-			break
-		}
-	}
-
-	if !hasFMT {
-		offset := f.offset(parsedFile.Imports[0].Pos())
-		f.buf.Insert(offset, "\"fmt\"\n\t")
-	}
+	f.ensureImport("fmt")
 
 	fmt.Fprintln(os.Stdout, string(f.buf.Bytes()))
 }
@@ -71,6 +60,7 @@ type finder struct {
 	content []byte
 	fset    *token.FileSet
 	buf     *Buffer
+	pf      *ast.File
 }
 
 func (f *finder) offset(pos token.Pos) int {
@@ -107,4 +97,25 @@ func (f *finder) find(pos token.Pos, text string) int {
 		i++
 	}
 	return -1
+}
+
+func (f *finder) ensureImport(pkg string) {
+	hasFMT := false
+	for _, pkg := range f.pf.Imports {
+		if strings.HasPrefix(pkg.Path.Value, "\"fmt") {
+			hasFMT = true
+			break
+		}
+	}
+
+	if !hasFMT {
+		var offset int
+		if len(f.pf.Imports) > 0 {
+			offset = f.offset(f.pf.Imports[0].Pos())
+			f.buf.Insert(offset, "\"fmt\"\n\t")
+		} else {
+			offset = f.find(f.pf.Package, "\n")
+			f.buf.Insert(offset+1, "\nimport \"fmt\"\n")
+		}
+	}
 }
